@@ -1,0 +1,13 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+# 不锁死补丁号：SQLAlchemy 2.0.30 在 Python 3.13+ 上会因 enum 内部变更而导入失败，
+# 需要 2.0.4x 以上。镜像里固定用 Python 3.11，本地开发可能装到更新解释器。
+SQLAlchemy>=2.0.30,<2.1
+
+# MySQL 驱动。连接 MySQL 8 的默认认证插件 caching_sha2_password 需要 cryptography。
+# 不锁版本：不同 Python 版本对 wheel 的可用性差异较大，锁死会导致装不上。
+PyMySQL==1.1.1
+cryptography>=42.0.0
+
+gunicorn==22.0.0
+prometheus-client==0.20.0

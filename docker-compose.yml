@@ -1,0 +1,59 @@
+# 本地开发用的最小依赖编排。
+#
+# 说明：这份文件只为「在自己电脑上把后端跑起来」服务。
+# 生产环境的部署编排属于毕设的「部署架构」部分，另行编写。
+#
+# 用法：
+#   docker compose up -d --build
+#   curl http://localhost:8080/api/hello
+#   docker compose logs -f app
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ops-demo-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: ops_demo
+      MYSQL_USER: opsdemo
+      MYSQL_PASSWORD: opsdemo123
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+    ports:
+      - "3306:3306"
+    volumes:
+      # 首次启动时自动执行，省掉手动建库建表
+      - ./docs/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ops-demo-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_VERSION: dev
+      ENV_NAME: local
+      DATABASE_URL: mysql+pymysql://opsdemo:opsdemo123@mysql:3306/ops_demo?charset=utf8mb4
+      LOG_LEVEL: INFO
+      JSON_LOGS: "true"
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql-data:
